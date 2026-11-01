@@ -1,0 +1,45 @@
+name: Segnala il sito ai motori compatibili con IndexNow
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'index.html'
+      - 'sito-aggiornato.html'
+      - 'robots.txt'
+      - 'sitemap.xml'
+      - '.github/workflows/notify-indexnow.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verifica il sito e comunica la pagina a IndexNow
+        env:
+          WEBSITE: https://gran-concerto-bandistico-abruzzo.onrender.com
+          INDEXNOW_KEY: f3b9c7a1d4e64bcf8a2d5e703b91c6af
+        shell: bash
+        run: |
+          set -euo pipefail
+          actual="$(curl --fail --location --silent --show-error --max-time 30 "${WEBSITE}/${INDEXNOW_KEY}.txt")"
+          if [ "$actual" != "$INDEXNOW_KEY" ]; then
+            echo "Impossibile verificare la chiave IndexNow sul sito."
+            exit 1
+          fi
+          code="$(curl --location --silent --show-error --max-time 30 \
+            --output /tmp/indexnow_response \
+            --write-out '%{http_code}' \
+            --get \
+            --data-urlencode "url=${WEBSITE}/" \
+            --data-urlencode "key=${INDEXNOW_KEY}" \
+            'https://api.indexnow.org/indexnow')"
+          echo "Risposta IndexNow: HTTP ${code}"
+          cat /tmp/indexnow_response || true
+          if [ "$code" != "200" ] && [ "$code" != "202" ]; then
+            exit 1
+          fi
