@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: gran-concerto-bandistico-abruzzo
+    runtime: static
+    repo: https://github.com/saxantony-collab/gran-concerto-bandistico-abruzzo
+    branch: main
+    buildCommand: mkdir -p public && cp index.html sito-aggiornato.html public/
+    staticPublishPath: public
+    autoDeployTrigger: commit
