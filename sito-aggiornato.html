@@ -33,6 +33,7 @@ section{scroll-margin-top:75px}.section{padding:108px 0}.section:nth-of-type(odd
 /* Controllo audio discreto, visualizzato solo quando esiste una traccia autorizzata */
 .bg-audio-control{position:fixed;right:18px;bottom:18px;z-index:70;border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:12px 19px;background:#102539;color:#f1f3f4;box-shadow:0 8px 28px #0005;font:600 13px system-ui;cursor:pointer}
 .bg-audio-control[hidden]{display:none!important}
+.bg-audio-control:disabled{opacity:.75;cursor:progress}
 </style>
 </head>
 <body style="--piazza-photo:url('https://upload.wikimedia.org/wikipedia/commons/d/de/L%27Aquila_2017_-_Piazza_del_Duomo_-_by-RaBoe_003.jpg')"><div class="noise" aria-hidden="true"></div>
@@ -74,18 +75,51 @@ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.return
 })();
 </script>
 
-<audio id="bgAudio" loop preload="none" playsinline aria-label="Musica di sottofondo Regione Abruzzo"><source src="audio/regione-abruzzo.mp3" type="audio/mpeg"></audio>
-<button id="bgAudioControl" class="bg-audio-control" type="button" hidden aria-label="Avvia o ferma la musica di sottofondo">♫ Ascolta la marcia</button>
+<audio id="bgAudio" loop preload="auto" playsinline aria-label="Marcia sinfonica Regione Abruzzo di Michele Lufrano"></audio>
+<button id="bgAudioControl" class="bg-audio-control" type="button" aria-label="Avvia o ferma la marcia Regione Abruzzo" disabled>♫ Caricamento musica…</button>
 <script>
 (function(){
- const audio=document.getElementById('bgAudio'),button=document.getElementById('bgAudioControl');
- if(!audio||!button)return;
- audio.volume=.4;
- fetch('audio/regione-abruzzo.mp3',{method:'HEAD'}).then(r=>{if(!r.ok)throw Error('Traccia audio non disponibile');button.hidden=false;audio.preload='metadata';return audio.play();}).then(()=>{button.textContent='♫ Pausa musica';}).catch(()=>{});
- function sync(){button.textContent=audio.paused?'♫ Ascolta la marcia':'♫ Pausa musica'}
- button.addEventListener('click',()=>{if(audio.paused)audio.play().catch(()=>{});else audio.pause();});
- audio.addEventListener('play',sync);audio.addEventListener('pause',sync);
- document.addEventListener('pointerdown',function start(){if(!button.hidden&&audio.paused)audio.play().catch(()=>{});document.removeEventListener('pointerdown',start)}, {once:true});
+  const audio=document.getElementById('bgAudio');
+  const button=document.getElementById('bgAudioControl');
+  if(!audio||!button)return;
+  audio.volume=0.38;
+  let ready=false;
+  const paths=Array.from({length:9},(_,i)=>'audio/regione-abruzzo-'+String(i+1).padStart(2,'0')+'.b64');
+  function updateLabel(){
+    button.textContent=audio.paused?'♫ Ascolta la marcia':'♫ Pausa musica';
+    button.setAttribute('aria-pressed',String(!audio.paused));
+  }
+  audio.addEventListener('play',updateLabel);
+  audio.addEventListener('pause',updateLabel);
+  button.addEventListener('click',function(){
+    if(!ready)return;
+    if(audio.paused)audio.play().catch(()=>{});
+    else audio.pause();
+  });
+  function startFromGesture(event){
+    if(!ready||button.contains(event.target)||!audio.paused)return;
+    audio.play().then(()=>document.removeEventListener('pointerdown',startFromGesture)).catch(()=>{});
+  }
+  document.addEventListener('pointerdown',startFromGesture,{passive:true});
+  Promise.all(paths.map(async function(path){
+    const res=await fetch(path);
+    if(!res.ok)throw new Error('File audio non trovato: '+path);
+    return (await res.text()).trim();
+  })).then(function(chunks){
+    const raw=atob(chunks.join(''));
+    const bytes=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
+    audio.src=URL.createObjectURL(new Blob([bytes],{type:'audio/mp4'}));
+    audio.load();
+    ready=true;
+    button.disabled=false;
+    updateLabel();
+    audio.play().catch(()=>{ /* I browser mobili richiedono un gesto dell'utente */ });
+  }).catch(function(error){
+    console.error('Impossibile caricare la musica di sottofondo',error);
+    button.textContent='♫ Audio non disponibile';
+    button.disabled=true;
+  });
 })();
 </script>
 </body></html>
