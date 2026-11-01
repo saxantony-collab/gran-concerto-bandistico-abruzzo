@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://gran-concerto-bandistico-abruzzo.onrender.com/sitemap.xml
