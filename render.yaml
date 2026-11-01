@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: gran-concerto-bandistico-abruzzo
+    name: granconcertobandisticoabruzzo
     runtime: static
     repo: https://github.com/saxantony-collab/gran-concerto-bandistico-abruzzo
     branch: main
