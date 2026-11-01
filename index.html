@@ -75,7 +75,7 @@ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.return
 })();
 </script>
 
-<audio id="bgAudio" loop preload="auto" playsinline aria-label="Marcia sinfonica Regione Abruzzo di Michele Lufrano"></audio>
+<audio id="bgAudio" autoplay loop preload="auto" playsinline aria-label="Marcia sinfonica Regione Abruzzo di Michele Lufrano"></audio>
 <button id="bgAudioControl" class="bg-audio-control" type="button" aria-label="Avvia o ferma la marcia Regione Abruzzo" disabled>♫ Caricamento musica…</button>
 <script>
 (function(){
@@ -101,6 +101,9 @@ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.return
     audio.play().then(()=>document.removeEventListener('pointerdown',startFromGesture)).catch(()=>{});
   }
   document.addEventListener('pointerdown',startFromGesture,{passive:true});
+  document.addEventListener('keydown',startFromGesture);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ready&&audio.paused)audio.play().catch(()=>{});});
+  window.addEventListener('pageshow',()=>{if(ready&&audio.paused)audio.play().catch(()=>{});});
   Promise.all(paths.map(async function(path){
     const res=await fetch(path);
     if(!res.ok)throw new Error('File audio non trovato: '+path);
@@ -110,6 +113,8 @@ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.return
     const bytes=new Uint8Array(raw.length);
     for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
     audio.src=URL.createObjectURL(new Blob([bytes],{type:'audio/mp4'}));
+    audio.autoplay=true;
+    audio.muted=false;
     audio.load();
     ready=true;
     button.disabled=false;
