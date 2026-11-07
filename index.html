@@ -59,7 +59,7 @@ section{scroll-margin-top:75px}.section{padding:108px 0}.section:nth-of-type(odd
 <meta name="twitter:image:alt" content="Manifesto ufficiale del Gran Concerto Bandistico Regione Abruzzo">
 </head>
 <body style="--piazza-photo:url('https://upload.wikimedia.org/wikipedia/commons/d/de/L%27Aquila_2017_-_Piazza_del_Duomo_-_by-RaBoe_003.jpg')">
-<audio id="bgAudio" src="/audio/regione-abruzzo.m4a" autoplay loop preload="auto" playsinline aria-label="Marcia sinfonica Regione Abruzzo di Michele Lufrano"></audio>
+<audio id="bgAudio" autoplay loop preload="auto" playsinline aria-label="Marcia sinfonica Regione Abruzzo di Michele Lufrano"><source src="/audio/regione-abruzzo.m4a" type='audio/mp4; codecs="mp4a.40.2"'></audio>
 <button id="bgAudioControl" class="bg-audio-control" type="button" aria-label="Avvia o ferma la marcia Regione Abruzzo">♫ Caricamento musica…</button>
 <script>
 (function(){
@@ -78,10 +78,13 @@ section{scroll-margin-top:75px}.section{padding:108px 0}.section:nth-of-type(odd
     if(attempt&&attempt.catch)attempt.catch(function(error){
       updateLabel();
       if(error.name==='NotAllowedError'){
-        button.textContent='♫ Audio automatico bloccato dal browser';
+        button.textContent='♫ Ascolta la musica di presentazione';
       }
     });
   }
+  audio.addEventListener('loadeddata',start);
+  audio.addEventListener('canplay',start);
+  audio.addEventListener('playing',updateLabel);
   audio.addEventListener('play',updateLabel);
   audio.addEventListener('pause',updateLabel);
   audio.addEventListener('error',function(){
@@ -101,6 +104,8 @@ section{scroll-margin-top:75px}.section{padding:108px 0}.section:nth-of-type(odd
     if(!button.contains(event.target))start();
   }
   document.addEventListener('pointerup',startFromGesture,{passive:true});
+  document.addEventListener('touchend',startFromGesture,{passive:true});
+  document.addEventListener('click',startFromGesture);
   document.addEventListener('keydown',startFromGesture);
   window.addEventListener('pageshow',start);
   document.addEventListener('visibilitychange',function(){
