@@ -59,58 +59,54 @@ section{scroll-margin-top:75px}.section{padding:108px 0}.section:nth-of-type(odd
 <meta name="twitter:image:alt" content="Manifesto ufficiale del Gran Concerto Bandistico Regione Abruzzo">
 </head>
 <body style="--piazza-photo:url('https://upload.wikimedia.org/wikipedia/commons/d/de/L%27Aquila_2017_-_Piazza_del_Duomo_-_by-RaBoe_003.jpg')">
-<audio id="bgAudio" autoplay loop preload="auto" playsinline aria-label="Marcia sinfonica Regione Abruzzo di Michele Lufrano"></audio>
-<button id="bgAudioControl" class="bg-audio-control" type="button" aria-label="Avvia o ferma la marcia Regione Abruzzo" disabled>♫ Caricamento musica…</button>
+<audio id="bgAudio" src="/audio/regione-abruzzo.m4a" autoplay loop preload="auto" playsinline aria-label="Marcia sinfonica Regione Abruzzo di Michele Lufrano"></audio>
+<button id="bgAudioControl" class="bg-audio-control" type="button" aria-label="Avvia o ferma la marcia Regione Abruzzo">♫ Caricamento musica…</button>
 <script>
 (function(){
   const audio=document.getElementById('bgAudio');
   const button=document.getElementById('bgAudioControl');
   if(!audio||!button)return;
   audio.volume=0.38;
-  let ready=false, userPaused=false;
-  const paths=Array.from({length:9},(_,i)=>'audio/regione-abruzzo-'+String(i+1).padStart(2,'0')+'.b64');
+  let userPaused=false;
   function updateLabel(){
-    button.textContent=audio.paused?'♫ Tocca per avviare la musica':'♫ Pausa musica';
+    button.textContent=audio.paused?'♫ Musica di presentazione':'♫ Pausa musica';
     button.setAttribute('aria-pressed',String(!audio.paused));
+  }
+  function start(){
+    if(userPaused||!audio.paused)return;
+    const attempt=audio.play();
+    if(attempt&&attempt.catch)attempt.catch(function(error){
+      updateLabel();
+      if(error.name==='NotAllowedError'){
+        button.textContent='♫ Audio automatico bloccato dal browser';
+      }
+    });
   }
   audio.addEventListener('play',updateLabel);
   audio.addEventListener('pause',updateLabel);
+  audio.addEventListener('error',function(){
+    button.textContent='♫ Riprova a caricare la musica';
+  });
   button.addEventListener('click',function(){
-    if(!ready)return;
-    if(audio.paused){userPaused=false;audio.play().catch(updateLabel);}
-    else {userPaused=true;audio.pause();}
+    if(audio.paused){
+      userPaused=false;
+      if(audio.error)audio.load();
+      start();
+    }else{
+      userPaused=true;
+      audio.pause();
+    }
   });
   function startFromGesture(event){
-    if(!ready||userPaused||button.contains(event.target)||!audio.paused)return;
-    audio.play().catch(updateLabel);
+    if(!button.contains(event.target))start();
   }
-  document.addEventListener('pointerdown',startFromGesture,{passive:true});
   document.addEventListener('pointerup',startFromGesture,{passive:true});
-  document.addEventListener('click',startFromGesture);
   document.addEventListener('keydown',startFromGesture);
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ready&&!userPaused&&audio.paused)audio.play().catch(()=>{});});
-  window.addEventListener('pageshow',()=>{if(ready&&!userPaused&&audio.paused)audio.play().catch(()=>{});});
-  Promise.all(paths.map(async function(path){
-    const res=await fetch(path);
-    if(!res.ok)throw new Error('File audio non trovato: '+path);
-    return (await res.text()).trim();
-  })).then(function(chunks){
-    const raw=atob(chunks.join(''));
-    const bytes=new Uint8Array(raw.length);
-    for(let i=0;i<raw.length;i++)bytes[i]=raw.charCodeAt(i);
-    audio.src=URL.createObjectURL(new Blob([bytes],{type:'audio/mp4'}));
-    audio.autoplay=true;
-    audio.muted=false;
-    audio.load();
-    ready=true;
-    button.disabled=false;
-    updateLabel();
-    audio.play().catch(()=>{ /* I browser mobili richiedono un gesto dell'utente */ });
-  }).catch(function(error){
-    console.error('Impossibile caricare la musica di sottofondo',error);
-    button.textContent='♫ Audio non disponibile';
-    button.disabled=true;
+  window.addEventListener('pageshow',start);
+  document.addEventListener('visibilitychange',function(){
+    if(!document.hidden)start();
   });
+  start();
 })();
 </script>
 
